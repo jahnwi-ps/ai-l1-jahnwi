@@ -28,6 +28,8 @@ if not API_KEY:
     sys.exit("Error: OLLAMA_API_KEY missing. Copy .env.example to .env and set your key.")
 MODEL_NAME = os.getenv("MODEL_NAME", "qwen3-coder:480b-cloud")
 ALLOWED_EXTENSIONS = {'.pdf', '.txt'}
+MAX_HISTORY_MESSAGES = 6     # conversation memory: the last 3 question/answer pairs
+MAX_HISTORY_CHARS = 2000     # per remembered message, to keep the prompt small
 
 ollama_client = Client(
     host="https://ollama.com",
@@ -162,27 +164,54 @@ def upload_file():
     return jsonify({"message": "File processed and knowledge base updated!"})
 
 
+def clean_history(raw):
+    """Keeps only well-formed user/assistant turns sent by the browser, newest last."""
+    if not isinstance(raw, list):
+        return []
+    turns = [{'role': t['role'], 'content': t['content'][:MAX_HISTORY_CHARS]}
+             for t in raw
+             if isinstance(t, dict) and t.get('role') in ('user', 'assistant')
+             and isinstance(t.get('content'), str) and t['content'].strip()]
+    return turns[-MAX_HISTORY_MESSAGES:]
+
+
+def describe_sources(docs):
+    """Unique file names (with page numbers for PDFs) the answer's context came from."""
+    sources = []
+    for d in docs:
+        name = os.path.basename(d.metadata.get('source', '')) or 'unknown'
+        if 'page' in d.metadata:
+            name += f" (p. {d.metadata['page'] + 1})"
+        if name not in sources:
+            sources.append(name)
+    return sources
+
+
 @app.route('/chat', methods=['POST'])
 def chat():
     global retriever
     # Lazy init if the server started without data
     with rag_lock:
         if retriever is None and not init_rag_system():
-            return jsonify({"answer": "I have no knowledge yet. Please upload a document."})
+            return jsonify({"answer": "I have no knowledge yet. Please upload a document.", "sources": []})
 
     data = request.get_json(silent=True) or {}
     question = (data.get('message') or '').strip()
+    history = clean_history(data.get('history'))
 
     if not question:
         return jsonify({"error": "No message provided"}), 400
 
     try:
-        # Step 3 — Retrieval: find relevant chunks from ChromaDB
-        relevant_docs = retriever.invoke(question)
+        # Step 3 — Retrieval: find relevant chunks from ChromaDB.
+        # Follow-ups like "tell me more" say little on their own, so search with the previous question too.
+        previous_questions = [t['content'] for t in history if t['role'] == 'user']
+        search_query = f"{previous_questions[-1]}\n{question}" if previous_questions else question
+        relevant_docs = retriever.invoke(search_query)
         context_text = "\n\n".join([d.page_content for d in relevant_docs])
 
-        # Step 4 — Prompt construction (RAG prompt)
-        system_prompt = f"""You are a helpful assistant. Answer the user's question based ONLY on the following context. If the answer is not in the context, say you don't know.
+        # Step 4 — Prompt construction (RAG prompt + recent conversation)
+        system_prompt = f"""You are a helpful assistant. Answer the user's question based ONLY on the following context. If the answer is not in the context, say you don't know. Use the earlier conversation only to understand what the user is referring to.
 
 Context:
 {context_text}
@@ -190,6 +219,7 @@ Context:
 
         messages = [
             {'role': 'system', 'content': system_prompt},
+            *history,
             {'role': 'user', 'content': question}
         ]
 
@@ -197,7 +227,7 @@ Context:
         response = ollama_client.chat(model=MODEL_NAME, messages=messages, stream=False)
         answer = response.message.content
 
-        return jsonify({"answer": answer})
+        return jsonify({"answer": answer, "sources": describe_sources(relevant_docs)})
 
     except Exception as e:
         # Log details server-side; don't leak internals to the browser

@@ -4,6 +4,16 @@
 
 A Proof-of-Concept for a **Retrieval-Augmented Generation (RAG)** assistant that demonstrates how Large Language Models can be enhanced with private, external knowledge to produce accurate, grounded answers.
 
+> [!IMPORTANT]
+> **Already installed an earlier version? Reinstall the dependencies before starting the app.**
+> Level 1 now needs a new package (`langchain-huggingface`), so run this again first:
+>
+> ```bash
+> pip install -r requirements.txt
+> ```
+>
+> `start_app.cmd` already does this for you on every launch. See [What's New](#whats-new).
+
 ---
 
 ## Project Overview
@@ -24,8 +34,9 @@ The result is an assistant that answers *only* from what it actually knows.
 |---|---|
 | **LLM** | Qwen3-Coder 480b-cloud (via Ollama Cloud API) |
 | **Vector Database** | ChromaDB (persisted to `db_chroma/`) |
-| **Embeddings** | HuggingFace `all-MiniLM-L6-v2` (local, zero cost) |
-| **Orchestration** | LangChain |
+| **Embeddings** | HuggingFace `all-MiniLM-L6-v2` via `langchain-huggingface` (local, zero cost) |
+| **Orchestration** | LangChain (`langchain-core`, `langchain-chroma`, `langchain-text-splitters`) |
+| **PDF reading** | `pypdf` |
 | **Backend** | Python · Flask |
 | **Frontend** | HTML5 · CSS3 · Vanilla JavaScript |
 
@@ -37,7 +48,7 @@ The result is an assistant that answers *only* from what it actually knows.
 data.txt / uploaded file
         │
         ▼
-  [1] Ingestion          ← TextLoader / PyPDFLoader
+  [1] Ingestion          ← pypdf (PDF, one document per page) / UTF-8 text reader
         │
         ▼
   [2] Chunking           ← RecursiveCharacterTextSplitter (1000 chars, 200 overlap)
@@ -52,15 +63,15 @@ data.txt / uploaded file
         │
         ▼
   [5] Retrieval          ← Similarity search in ChromaDB
-        │
+        │                   (follow-ups also search with the previous question)
         ▼
-  [6] Prompt Augmentation ← System prompt + retrieved context
+  [6] Prompt Augmentation ← System prompt + retrieved context + last 3 Q&A turns
         │
         ▼
   [7] Generation         ← Qwen3-Coder 480b via Ollama Cloud
         │
         ▼
-     Answer shown in chat UI
+     Answer + its sources shown in chat UI
 ```
 
 ---
@@ -74,7 +85,7 @@ data.txt / uploaded file
 ### Install & Run
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies (run this again after every update — new packages may have been added)
 pip install -r requirements.txt
 
 # 2. Configure your API key
@@ -132,6 +143,25 @@ ai-l1-jahnwi/
 - **Persistent vector store** — ChromaDB saves embeddings to disk (`db_chroma/`)
 - **Local embeddings** — No embedding API costs; MiniLM-L6-v2 runs entirely offline
 - **Source-grounded answers** — The LLM is instructed to answer *only* from retrieved context
+- **Source citations** — Each answer lists the documents (and PDF page numbers) its context came from
+- **Conversation memory** — Follow-up questions like *"tell me more"* or *"why?"* use the last 3 question/answer pairs; **New chat** clears it
+- **Re-upload replaces** — Uploading a file with the same name replaces its old content instead of duplicating it
+
+---
+
+## What's New
+
+**Action needed:** run `pip install -r requirements.txt` again before starting the app (`start_app.cmd` does this automatically).
+
+**New features**
+- Answers show their **sources** (file name, plus page number for PDFs).
+- **Conversation memory**: the assistant remembers the last 3 questions and answers, so follow-ups work. The **New chat** button in the header starts fresh.
+
+**Fixes**
+- Re-uploading a file with the same name no longer stores its text twice.
+- Replaced the deprecated `langchain-community` package with `langchain-huggingface` (embeddings) and `pypdf` (PDF reading). Dependencies are now pinned to tested major versions.
+- Chat answers keep their line breaks and show `**bold**` text as bold.
+- The send button can't fire a second request while an answer is loading.
 
 ---
 

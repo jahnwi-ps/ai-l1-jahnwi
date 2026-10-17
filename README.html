@@ -89,6 +89,15 @@
             border-color: var(--accent);
         }
 
+        .card.notice {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.08);
+        }
+
+        .card.notice h2 span {
+            color: #f59e0b;
+        }
+
         .card h2 {
             font-size: 1rem;
             font-weight: 600;
@@ -212,6 +221,14 @@
         </header>
 
         <main class="grid">
+            <!-- Upgrade notice -->
+            <div class="card full notice">
+                <h2><span>!</span> Updating from an earlier version?</h2>
+                <p>Level 1 now needs a new package (<code>langchain-huggingface</code>). Run this again before starting the app:</p>
+                <pre><code>pip install -r requirements.txt</code></pre>
+                <p><code>start_app.cmd</code> already does this for you on every launch.</p>
+            </div>
+
             <!-- Setup Card -->
             <div class="card">
                 <h2><span>01</span> Quick Start</h2>
@@ -246,6 +263,12 @@ python app.py</code></pre>
                         <p><strong>Cloud LLM:</strong> High-performance reasoning via Ollama Cloud API.</p>
                         <p><strong>Universal Ingestion:</strong> Native support for PDF and Plaintext.</p>
                     </div>
+                    <div>
+                        <p><strong>Source Citations:</strong> Every answer lists the files (and PDF pages) it drew from.</p>
+                    </div>
+                    <div>
+                        <p><strong>Conversation Memory:</strong> Follow-ups use the last 3 Q&amp;A turns; <em>New chat</em> clears it.</p>
+                    </div>
                 </div>
             </div>
 
@@ -273,7 +296,7 @@ python app.py</code></pre>
             <!-- How it works -->
             <div class="card">
                 <h2><span>06</span> Logic</h2>
-                <p>Ingestion → Chunking → Embedding → ChromaDB Store → Retrieve → Prompt Enhance → LLM Generate.</p>
+                <p>Ingestion → Chunking → Embedding → ChromaDB Store → Retrieve → Prompt Enhance (context + recent chat) → LLM Generate → Answer with sources.</p>
             </div>
         </main>
 
@@ -283,4 +306,4 @@ python app.py</code></pre>
     </div>
 </body>
 
-</html>
+</html>

@@ -448,6 +448,32 @@
             color: #fca5a5;
         }
 
+        .sources {
+            margin-top: 0.6rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: normal;
+        }
+
+        .new-chat-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font: inherit;
+            font-size: 0.72rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-main);
+        }
+
         /* Typing indicator */
         .typing-indicator {
             display: flex;
@@ -611,6 +637,7 @@
     <header class="chat-header">
         <div class="chat-header-left">
             <span class="chat-title">Document Q&amp;A</span>
+            <button class="new-chat-btn" id="new-chat-btn" title="Clear the conversation and start fresh">New chat</button>
         </div>
         <div class="model-badge">
             <div class="model-dot"></div>
@@ -662,6 +689,16 @@
     const uploadStatus= document.getElementById('upload-status');
 
     let isLoading = false;
+    // Conversation memory: recent turns are sent with each question so follow-ups make sense
+    let history = [];
+    const MAX_HISTORY = 6;
+
+    document.getElementById('new-chat-btn').addEventListener('click', () => {
+        if (isLoading) return;
+        history = [];
+        messagesEl.replaceChildren(welcomeEl);
+        inputEl.focus();
+    });
 
     // ── Auto-resize textarea
     inputEl.addEventListener('input', () => {
@@ -702,13 +739,15 @@
         fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text })
+            body: JSON.stringify({ message: text, history: history })
         })
         .then(r => r.json())
         .then(data => {
             typingEl.remove();
             if (data.answer) {
-                appendMessage('ai', data.answer);
+                appendMessage('ai', data.answer, false, data.sources);
+                history.push({ role: 'user', content: text }, { role: 'assistant', content: data.answer });
+                history = history.slice(-MAX_HISTORY);
             } else if (data.error) {
                 appendMessage('ai', '⚠️ ' + data.error, true);
             }
@@ -724,7 +763,7 @@
         });
     }
 
-    function appendMessage(role, text, isError = false) {
+    function appendMessage(role, text, isError = false, sources = []) {
         const msg = document.createElement('div');
         msg.className = `message ${role}`;
 
@@ -735,6 +774,14 @@
         const bubble = document.createElement('div');
         bubble.className = 'bubble' + (isError ? ' error-bubble' : '');
         renderText(bubble, text);
+
+        // Which documents the answer's context came from
+        if (Array.isArray(sources) && sources.length) {
+            const src = document.createElement('div');
+            src.className = 'sources';
+            src.textContent = 'Sources: ' + sources.join(' · ');
+            bubble.appendChild(src);
+        }
 
         msg.appendChild(avatar);
         msg.appendChild(bubble);
