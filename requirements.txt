@@ -1,0 +1,10 @@
+flask
+langchain
+langchain-community
+langchain-chroma
+langchain-text-splitters
+pypdf
+python-dotenv
+chromadb
+ollama
+sentence-transformers

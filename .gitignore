@@ -1,0 +1,12 @@
+# Secrets
+.env
+
+# Runtime data (rebuilt at startup / created by users)
+db_chroma/
+uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/

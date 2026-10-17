@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #09090b;
+            --card-bg: #111114;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --border: #27272a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 4rem 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wrapper {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* Header Section */
+        header {
+            margin-bottom: 4rem;
+            text-align: center;
+        }
+
+        .author-tag {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Compact Sections Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card h2 span {
+            color: var(--accent);
+        }
+
+        /* Full Width Card */
+        .card.full {
+            grid-column: span 2;
+        }
+
+        /* Lists & Text */
+        p,
+        li {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            list-style: none;
+        }
+
+        .card ul li::before {
+            content: "→";
+            margin-right: 8px;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Code blocks */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #000;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+
+        pre {
+            background: #000;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        pre code {
+            color: #d1d1d1;
+            padding: 0;
+            background: none;
+        }
+
+        /* Badge system */
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            background: #27272a;
+            border-radius: 4px;
+            color: #fafafa;
+            border: 1px solid var(--border);
+        }
+
+        .footer {
+            margin-top: 4rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+        }
+
+        .primary-btn {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: box-shadow 0.2s;
+        }
+
+        .primary-btn:hover {
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card.full {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <header>
+            <h1>RAG Assistant POC</h1>
+            <p class="subtitle">A minimalist, retrieval-augmented intelligence system capable of grounded document
+                reasoning.</p>
+        </header>
+
+        <main class="grid">
+            <!-- Setup Card -->
+            <div class="card">
+                <h2><span>01</span> Quick Start</h2>
+                <div class="content">
+                    <pre><code>pip install -r requirements.txt
+copy .env.example .env
+python app.py</code></pre>
+                    <p>Default access: <code>localhost:5001</code></p>
+                </div>
+            </div>
+
+            <!-- Configuration Card -->
+            <div class="card">
+                <h2><span>02</span> Config</h2>
+                <ul>
+                    <li>Set <code>OLLAMA_API_KEY</code> in <code>.env</code></li>
+                    <li>Model: <code>qwen3-coder:480b-cloud</code></li>
+                    <li>Server Port: <code>5001</code></li>
+                </ul>
+            </div>
+
+            <!-- Features Card -->
+            <div class="card full">
+                <h2><span>03</span> Core Capabilities</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <p><strong>Vector Search:</strong> Local ChromaDB store for millisecond retrieval latency.
+                        </p>
+                        <p><strong>Local Embeddings:</strong> MiniLM-L6-v2 local model (zero cost).</p>
+                    </div>
+                    <div>
+                        <p><strong>Cloud LLM:</strong> High-performance reasoning via Ollama Cloud API.</p>
+                        <p><strong>Universal Ingestion:</strong> Native support for PDF and Plaintext.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Stack -->
+            <div class="card full">
+                <h2><span>04</span> Technical Architecture</h2>
+                <p>Built with a modular RAG pipeline that separates document ingestion from the reasoning engine.</p>
+                <div class="badges">
+                    <span class="badge">Flask</span>
+                    <span class="badge">LangChain</span>
+                    <span class="badge">ChromaDB</span>
+                    <span class="badge">Ollama Cloud</span>
+                    <span class="badge">HuggingFace</span>
+                    <span class="badge">Vanilla JS</span>
+                </div>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div class="card">
+                <h2><span>05</span> Fixes</h2>
+                <p>If port is busy, set <code>PORT</code> in <code>.env</code>.</p>
+                <p>Run <code>start_app.cmd</code> for one-click launch.</p>
+            </div>
+
+            <!-- How it works -->
+            <div class="card">
+                <h2><span>06</span> Logic</h2>
+                <p>Ingestion → Chunking → Embedding → ChromaDB Store → Retrieve → Prompt Enhance → LLM Generate.</p>
+            </div>
+        </main>
+
+        <div class="footer">
+            AI Level 1 Training Project
+        </div>
+    </div>
+</body>
+
+</html>
