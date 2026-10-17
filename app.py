@@ -6,10 +6,11 @@ from functools import lru_cache
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-from langchain_community.document_loaders import TextLoader, PyPDFLoader
+from pypdf import PdfReader
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from ollama import Client
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -47,9 +48,13 @@ def get_embedding_function():
 
 
 def load_document(path):
+    """Reads a PDF (one Document per page) or a UTF-8 text file into LangChain Documents."""
     if path.lower().endswith('.pdf'):
-        return PyPDFLoader(path).load()
-    return TextLoader(path, encoding='utf-8').load()
+        reader = PdfReader(path)
+        return [Document(page_content=page.extract_text() or '', metadata={'source': path, 'page': i})
+                for i, page in enumerate(reader.pages)]
+    with open(path, encoding='utf-8') as f:
+        return [Document(page_content=f.read(), metadata={'source': path})]
 
 
 def init_rag_system():
@@ -146,6 +151,10 @@ def upload_file():
             vectorstore = Chroma.from_documents(splits, get_embedding_function(),
                                                 persist_directory=app.config['DB_FOLDER'])
         else:
+            # Re-uploading a file with the same name replaces its old chunks instead of duplicating them
+            old_ids = vectorstore.get(where={'source': save_path})['ids']
+            if old_ids:
+                vectorstore.delete(ids=old_ids)
             # Subsequent uploads — add to existing collection
             vectorstore.add_documents(splits)
         retriever = vectorstore.as_retriever()

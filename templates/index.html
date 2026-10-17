@@ -426,6 +426,8 @@
             border-radius: 12px;
             font-size: 0.875rem;
             line-height: 1.65;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
         }
 
         .message.user .bubble {
@@ -732,13 +734,27 @@
 
         const bubble = document.createElement('div');
         bubble.className = 'bubble' + (isError ? ' error-bubble' : '');
-        bubble.textContent = text;
+        renderText(bubble, text);
 
         msg.appendChild(avatar);
         msg.appendChild(bubble);
         messagesEl.appendChild(msg);
         messagesEl.scrollTop = messagesEl.scrollHeight;
         return msg;
+    }
+
+    // Shows **bold** as bold using text nodes only, so model output can never inject HTML
+    function renderText(el, text) {
+        String(text).split(/\*\*(.+?)\*\*/g).forEach((part, i) => {
+            if (!part) return;
+            if (i % 2) {
+                const strong = document.createElement('strong');
+                strong.textContent = part;
+                el.appendChild(strong);
+            } else {
+                el.appendChild(document.createTextNode(part));
+            }
+        });
     }
 
     function appendTyping() {
